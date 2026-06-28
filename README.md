@@ -40,7 +40,7 @@ katsayıları ve GUI ayarları — koda gömülü değildir; tamamı `config.yam
 - **Dört yöntem**: Ham GNSS · Alçak Geçiren Filtre · Tamamlayıcı Filtre (dropout'ta
   IMU dead-reckoning) · **EKF** (innovation gating ile arıza/aykırı değer reddi)
 - Konum, hız ve yaw için **RMSE metrikleri** + **EKF kovaryansı ve ±3σ** grafikleri
-- **Config-driven, GTA tarzı canlı minimap GUI** (Pygame)
+- **Config-driven, canlı minimap GUI** (Pygame)
 
 ## Proje Yapısı
 
@@ -124,7 +124,7 @@ bu, yaw kestirimindeki yavaş sürüklenmenin (drift) doğrudan açıklamasıdı
 
 ## Minimap GUI
 
-Simülasyonu **GTA tarzı heading-up bir minimap** üzerinde yeniden oynatan,
+Simülasyonu **heading-up bir minimap** üzerinde yeniden oynatan,
 config-driven bir Pygame arayüzü. Ana pipeline'dan tamamen bağımsızdır; yalnızca
 `outputs/data/timeseries.npz`'i okur. Araç hep ekranın merkezinde ve yukarı bakar,
 harita araç yönelimine göre döner.
