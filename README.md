@@ -1,124 +1,179 @@
-# IMU-GNSS 2D State Estimation
+# IMU–GNSS Tabanlı 2B Araç Durum Kestirimi
 
-A modular, config-driven Python simulation for IMU-GNSS based 2D vehicle state estimation. The project generates a ground-truth vehicle trajectory, simulates noisy sensors and GNSS faults, compares multiple estimation filters, and exports plots and RMSE metrics.
+IMU ve GNSS sensörlerini kullanarak iki boyutlu düzlemde hareket eden bir aracın
+**konum, hız ve yönelim** durumlarını kestiren, **modüler ve config-driven** bir
+Python simülasyonu. Proje; gerçek araç hareketini üretir, bu hareketten gürültülü
+sensör ölçümleri ve GNSS arızaları simüle eder, IMU kalibrasyonu uygular, farklı
+filtreleme yöntemlerini karşılaştırır ve sonuçları grafikler, RMSE tablosu ve canlı
+bir minimap arayüzü üzerinden sunar.
 
-## Features
+<p align="center">
+  <img src="outputs/plots/gui_minimap.png" width="80%" alt="Minimap GUI">
+</p>
 
-- Ground-truth 2D vehicle trajectory generation
-- IMU sensor model with accelerometer `ax`, `ay` and gyroscope yaw rate
-- GNSS sensor model with `x`, `y`, `vx`, `vy`
-- Sensor noise, bias, and scale factor modeling
-- IMU calibration with biases estimated **from the data** (constant-velocity window), not taken from ground truth
-- GNSS delay of 200 ms
-- GNSS fault scenarios:
-  - Dropout between 300-310 s
-  - 500 m position jump between 400-401 s
-  - Frozen GNSS data between 500-505 s
-- Filter comparison:
-  - Raw GNSS
-  - Low-pass Filter
-  - Complementary Filter (IMU dead-reckoning during GNSS dropout)
-  - Extended Kalman Filter (EKF) with innovation gating for outlier/fault rejection
-- RMSE metric calculation for position, velocity, and yaw
-- Plot generation under `outputs/plots`
-- RMSE CSV output under `outputs/data`
+> Tahmin edilen durum vektörü: **x, y, vₓ, v_y, ψ** &nbsp;·&nbsp; Sensörler: **IMU + GNSS**
+> &nbsp;·&nbsp; Yöntemler: **Ham GNSS · Alçak Geçiren · Tamamlayıcı · EKF**
 
-## Project Structure
+---
+
+## Genel Bakış
+
+Araç 2B yatay düzlemde hareket eder. Önce gerçek (gürültüsüz) hareket verilen rota
+senaryosundan üretilir; ardından bu hareketten IMU (ivmeölçer + jiroskop) ve GNSS
+(konum + hız) ölçümleri türetilir. Sensörlere gürültü, bias, ölçek faktörü, gecikme
+ve arıza senaryoları eklenir. IMU kalibre edilir ve dört farklı füzyon yöntemiyle
+gerçek harekete en yakın kestirim yapılmaya çalışılır.
+
+Tüm parametreler — simülasyon süresi, frekanslar, rota segmentleri, sensör
+gürültüleri, bias/scale değerleri, GNSS gecikmesi, arıza senaryoları, filtre
+katsayıları ve GUI ayarları — koda gömülü değildir; tamamı `config.yaml`'dan okunur.
+
+## Özellikler
+
+- Rota senaryosundan **gerçek araç yörüngesi** üretimi (kinematik nokta-kütle modeli)
+- **IMU modeli**: ivme `aₓ, a_y` ve jiroskop yaw-rate — gürültü, bias, ölçek faktörü
+- **GNSS modeli**: `x, y, vₓ, v_y` — ölçüm gürültüsü ve 200 ms gecikme
+- **GNSS arıza senaryoları**: veri kesilmesi (300–310 s), 500 m pozisyon sıçraması
+  (400–401 s), donmuş veri (500–505 s)
+- **Veriden kestirilen IMU kalibrasyonu** (sabit-hız penceresinden bias tahmini —
+  gerçek değerler kullanılmaz)
+- **Dört yöntem**: Ham GNSS · Alçak Geçiren Filtre · Tamamlayıcı Filtre (dropout'ta
+  IMU dead-reckoning) · **EKF** (innovation gating ile arıza/aykırı değer reddi)
+- Konum, hız ve yaw için **RMSE metrikleri** + **EKF kovaryansı ve ±3σ** grafikleri
+- **Config-driven, GTA tarzı canlı minimap GUI** (Pygame)
+
+## Proje Yapısı
 
 ```text
 imu-gnss-2d-state-estimation/
-├── main.py
-├── config.yaml
+├── main.py                 # tüm pipeline'ı sırayla çalıştırır
+├── config.yaml             # tüm parametreler (simülasyon, sensör, arıza, filtre, gui)
+├── run_gui.py              # minimap GUI giriş noktası
 ├── requirements.txt
-├── src/
-│   ├── config_loader.py
-│   ├── route_generator.py
-│   ├── sensor_models.py
-│   ├── faults.py
-│   ├── calibration.py
-│   ├── filters.py
-│   ├── metrics.py
-│   └── plotting.py
+├── src/                    # simülasyon çekirdeği
+│   ├── config_loader.py    #   config okuma + doğrulama
+│   ├── route_generator.py  #   gerçek hareket üretimi
+│   ├── sensor_models.py    #   IMU + GNSS ölçüm modelleri
+│   ├── faults.py           #   GNSS gecikme + arıza senaryoları
+│   ├── calibration.py      #   veriden bias kestirimli kalibrasyon
+│   ├── filters.py          #   Raw / AGF / Tamamlayıcı / EKF
+│   ├── metrics.py          #   RMSE hesapları
+│   └── plotting.py         #   tüm grafikler
+├── gui/                    # bağımsız Pygame minimap arayüzü
+│   ├── data_loader.py · camera.py · minimap.py
+│   ├── charts.py · hud.py · timeline.py · playback.py · app.py
 ├── outputs/
-│   ├── plots/
-│   └── data/
-└── report/
-    └── IMU_GNSS_2D_State_Estimation_Raporu.pdf
+│   ├── plots/              # üretilen grafikler (.png)
+│   └── data/               # rmse_table.csv, timeseries.npz
+└── report/                 # PDF rapor
 ```
 
-## Installation
+## Kurulum
 
 ```bash
 python -m pip install -r requirements.txt
 ```
 
-## Usage
+## Kullanım
 
 ```bash
-python main.py
+python main.py      # simülasyonu çalıştırır; grafikleri ve timeseries.npz'i üretir
+python run_gui.py   # minimap arayüzünü açar (önce main.py çalıştırılmalı)
 ```
 
-The simulation reads parameters from `config.yaml`, runs the trajectory, sensor, fault, calibration, filtering, and evaluation pipeline, then writes generated artifacts to the `outputs` directory.
+`main.py`; config'i yükler, gerçek hareketi üretir, sensör ölçümlerini ve arızaları
+oluşturur, kalibrasyon ve filtreleri uygular, RMSE tablosunu hesaplar ve tüm
+grafikleri `outputs/` altına yazar.
 
-## Generated Outputs
+## Sonuçlar
 
-Plots are saved under `outputs/plots`:
+Yöntemlerin gerçek harekete göre RMSE değerleri (düşük = iyi):
 
-- `true_trajectory.png`
-- `trajectory_comparison.png`
-- `x_position_error.png`
-- `y_position_error.png`
-- `position_error_magnitude.png`
-- `speed_comparison.png`
-- `velocity_components.png`
-- `yaw_comparison.png`
-- `gnss_fault_scenarios.png`
-- `imu_ax_calibration.png`
-- `imu_ay_calibration.png`
-- `gyro_calibration.png`
-- `ekf_covariance.png`
-- `ekf_error_3sigma.png`
-
-RMSE metrics are saved as CSV output under `outputs/data/rmse_table.csv`.
-
-A full Turkish project report (9 sections, with embedded plots and the RMSE table) is generated under `report/`.
-
-## GUI (minimap)
-
-A config-driven, GTA-style heading-up minimap that replays the run. It is fully
-decoupled from the pipeline: it only reads `outputs/data/timeseries.npz`, which
-`main.py` exports. Run the pipeline once, then launch the GUI:
-
-```bash
-python main.py        # produces outputs/data/timeseries.npz
-python run_gui.py     # opens the minimap window
-```
-
-Features: vehicle-centred heading-up (rotating) minimap with the ground-truth
-route, the selected filter trail and GNSS points (invalid ones in red); a HUD
-(speed, time, method, position error); on-screen fault warnings; a media-player
-timeline you can scrub back and forth; and live error strips (position, speed
-and yaw error vs ground truth) for the active method, synced to the playhead. Everything —
-window size, colours, zoom, trail length, default method, playback speeds,
-which strips to show — is read from the `gui:` section of `config.yaml`.
-
-Controls: `Space` play/pause · `← →` ±5 s · `↑ ↓` speed · `M` cycle method ·
-`O` heading-up/north-up · `G` toggle GNSS · `T`/`E` toggle ground-truth/estimate
-· drag the timeline to scrub.
-
-## Results
-
-RMSE of each method against the ground truth (lower is better):
-
-| Method | Position RMSE [m] | Velocity RMSE [m/s] | Yaw RMSE [°] |
-|---|---|---|---|
-| Raw GNSS | 25.18 | 0.697 | 1.289 |
-| Low-pass Filter | 26.01 | 0.683 | 1.039 |
-| Complementary Filter | 17.48 | 0.411 | 1.688 |
+| Yöntem | Konum RMSE [m] | Hız RMSE [m/s] | Yaw RMSE [°] |
+|---|:--:|:--:|:--:|
+| Ham GNSS | 25.18 | 0.697 | 1.289 |
+| Alçak Geçiren Filtre | 26.01 | 0.683 | 1.039 |
+| Tamamlayıcı Filtre | 17.48 | 0.411 | 1.688 |
 | **EKF** | **5.01** | **0.325** | **1.688** |
 
-The EKF performs best across position and velocity; its innovation gating rejects the
-500 m position jump and the GNSS freeze faults, keeping the error low where the other
-methods spike. Yaw RMSE is identical for the EKF and complementary filter because
-neither receives a direct heading measurement from GNSS (both integrate the calibrated
-gyro).
+EKF konum ve hızda açık ara en başarılıdır; innovation gating sayesinde 500 m
+pozisyon sıçramasını ve donmuş-veri arızasını **reddederek**, diğer yöntemlerin
+sıçradığı anlarda hatayı düşük tutar. Yaw RMSE'si EKF ve Tamamlayıcı filtrede aynıdır:
+GNSS yönelimi doğrudan ölçmediği için her ikisi de yaw'ı kalibre jiroskopla taşır.
+
+<p align="center">
+  <img src="outputs/plots/trajectory_comparison.png" width="49%" alt="Yörünge karşılaştırması">
+  <img src="outputs/plots/position_error_magnitude.png" width="49%" alt="Konum hatası (log)">
+</p>
+<p align="center">
+  <em>Sol: 2B yörünge karşılaştırması &nbsp;·&nbsp; Sağ: 2B konum hatası (log ölçek) —
+  EKF, 400 s ve 500 s arızalarında dipte kalır.</em>
+</p>
+
+EKF ayrıca her durum için bir belirsizlik (kovaryans) üretir. Yönelim belirsizliği
+(σψ) sürekli büyür — GNSS yaw'ı gözlemlemediğinden yaw gözlemlenebilir değildir ve
+bu, yaw kestirimindeki yavaş sürüklenmenin (drift) doğrudan açıklamasıdır.
+
+<p align="center">
+  <img src="outputs/plots/ekf_error_3sigma.png" width="70%" alt="EKF ±3σ tutarlılık">
+</p>
+<p align="center">
+  <em>EKF kestirim hatası ve ±3σ sınırları: konum hataları bant içinde kalır
+  (filtre tutarlıdır).</em>
+</p>
+
+## Minimap GUI
+
+Simülasyonu **GTA tarzı heading-up bir minimap** üzerinde yeniden oynatan,
+config-driven bir Pygame arayüzü. Ana pipeline'dan tamamen bağımsızdır; yalnızca
+`outputs/data/timeseries.npz`'i okur. Araç hep ekranın merkezinde ve yukarı bakar,
+harita araç yönelimine göre döner.
+
+İçerir: gerçek rota, seçili filtre izi ve GNSS noktaları (geçersizler kırmızı); bir
+HUD (hız, zaman, yöntem, anlık konum hatası); arıza anlarında ekran uyarısı;
+ileri-geri sarılabilen medya-oynatıcı zaman çizgisi; ve oynatma kafasıyla senkron
+**canlı hata şeritleri** (konum, hız, yaw hatası). `M` ile aktif yöntem değişir; harita
+ve şeritler o yöntemin kimlik rengine geçer.
+
+<p align="center">
+  <img src="outputs/plots/gui_fault.png" width="80%" alt="Minimap GUI - arıza anı">
+</p>
+<p align="center">
+  <em>400 s GNSS pozisyon sıçraması anı: ekranda arıza uyarısı, EKF arızayı reddediyor.</em>
+</p>
+
+**Kontroller:** `Boşluk` oynat/duraklat · `← →` ±5 s · `↑ ↓` hız · `M` yöntem değiştir ·
+`O` heading-up/north-up · `G` GNSS katmanı · `T`/`E` gerçek rota/kestirim katmanı ·
+zaman çizgisini sürükleyerek ileri-geri gez.
+
+Pencere boyutu, renkler, zoom, iz uzunluğu, varsayılan yöntem, oynatma hızları ve
+gösterilecek şeritler — hepsi `config.yaml`'daki `gui` bölümünden ayarlanır.
+
+## Yöntemler
+
+| Yöntem | Kısa açıklama |
+|---|---|
+| **Ham GNSS** | GNSS ölçümleri ana zamana interpole edilir (referans yöntem). |
+| **Alçak Geçiren Filtre** | Birinci dereceden filtre; gürültüyü yumuşatır, faz gecikmesi getirir. |
+| **Tamamlayıcı Filtre** | IMU kısa vade, GNSS uzun vade; dropout'ta saf IMU dead-reckoning. |
+| **EKF** | IMU öngörü + GNSS güncelleme; innovation gating ile arıza reddi. |
+
+## Varsayımlar ve Konvansiyonlar
+
+- Koordinat sistemi: x = doğu, y = kuzey; yaw ψ pozitif y yönünde 90°; saat yönünün
+  tersi pozitif (sağ dönüşler negatif).
+- Hız geçişlerinde sabit boylamsal ivme, dönüşlerde sabit yaw-rate varsayımı.
+- Araç noktasal kütle kinematik modeliyle temsil edilir.
+- IMU ivmeleri global çerçevede modellenmiştir.
+- Tekrarlanabilirlik için sabit `random_seed`.
+
+## Üretilen Çıktılar
+
+`outputs/plots/` altındaki grafikler: `true_trajectory`, `trajectory_comparison`,
+`x_position_error`, `y_position_error`, `position_error_magnitude`,
+`speed_comparison`, `velocity_components`, `yaw_comparison`, `gnss_fault_scenarios`,
+`imu_ax_calibration`, `imu_ay_calibration`, `gyro_calibration`, `ekf_covariance`,
+`ekf_error_3sigma`.
+
+RMSE metrikleri `outputs/data/rmse_table.csv`'ye; ayrıntılı PDF rapor `report/`
+klasörüne yazılır.
