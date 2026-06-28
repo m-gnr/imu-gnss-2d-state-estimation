@@ -44,11 +44,16 @@ class SimData:
         self.gnss_y = d["gnss_y"]
         self.gnss_valid = d["gnss_valid"].astype(bool)
 
-        # Precomputed per-method 2D position error (for the strip chart).
+        # Precomputed per-method error signals (for the strip charts).
         self.pos_error = np.hypot(
             self.est_x - self.true_x, self.est_y - self.true_y
-        )
+        )                                           # magnitude, >= 0
         self.est_speed = np.hypot(self.est_vx, self.est_vy)
+        self.speed_error = self.est_speed - self.true_v          # signed, m/s
+        dpsi = self.est_psi - self.true_psi
+        self.yaw_error_deg = np.rad2deg(
+            np.arctan2(np.sin(dpsi), np.cos(dpsi))               # wrapped, signed
+        )
 
     def method_index(self, name: str) -> int:
         return self.methods.index(name)

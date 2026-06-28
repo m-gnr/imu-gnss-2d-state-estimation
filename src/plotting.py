@@ -24,10 +24,16 @@ def create_all_plots(
     plot_trajectory(true_motion, gnss, estimates, plot_dir, dpi)
     plot_position_errors(true_motion, estimates, plot_dir, dpi)
     plot_velocity_comparison(true_motion, estimates, plot_dir, dpi)
+    plot_velocity_components(true_motion, gnss, estimates, plot_dir, dpi)
     plot_yaw_comparison(true_motion, estimates, plot_dir, dpi)
     plot_imu_acceleration(true_motion, imu, calibrated_imu, plot_dir, dpi)
     plot_gyro(true_motion, imu, calibrated_imu, plot_dir, dpi)
     plot_gnss_fault_regions(gnss, config, plot_dir, dpi)
+
+    # KF/EKF covariance and 3-sigma consistency plots (PDF Table 9).
+    if "EKF" in estimates and "cov" in estimates["EKF"]:
+        plot_ekf_covariance(true_motion, estimates["EKF"], plot_dir, dpi)
+        plot_ekf_error_3sigma(true_motion, estimates["EKF"], plot_dir, dpi)
 
 
 def plot_trajectory(
@@ -333,3 +339,99 @@ def plot_gnss_fault_regions(
     plt.tight_layout()
     plt.savefig(plot_dir / "gnss_fault_scenarios.png", dpi=dpi)
     plt.close()
+
+
+def plot_velocity_components(
+    true_motion: dict[str, np.ndarray],
+    gnss: dict[str, np.ndarray],
+    estimates: dict[str, dict[str, np.ndarray]],
+    plot_dir: Path,
+    dpi: int,
+) -> None:
+    """Velocity components vx, vy: ground truth, GNSS and all filters."""
+    t = true_motion["t"]
+    valid = gnss["valid"]
+
+    fig, axes = plt.subplots(2, 1, figsize=(11, 8), sharex=True)
+    for ax, comp in zip(axes, ("vx", "vy")):
+        ax.plot(t, true_motion[comp], label="Ground Truth", linewidth=2, color="k")
+        ax.scatter(gnss["t"][valid], gnss[comp][valid], s=4, alpha=0.3,
+                   label="GNSS", color="tab:blue")
+        for name, est in estimates.items():
+            ax.plot(t, est[comp], linewidth=1, label=name)
+        ax.set_ylabel(f"{comp} [m/s]")
+        ax.grid(True)
+    axes[0].set_title("Velocity Components: Ground Truth, GNSS and Filters")
+    axes[0].legend(fontsize=8, ncol=2)
+    axes[1].set_xlabel("Time [s]")
+    fig.tight_layout()
+    fig.savefig(plot_dir / "velocity_components.png", dpi=dpi)
+    plt.close(fig)
+
+
+def plot_ekf_covariance(
+    true_motion: dict[str, np.ndarray],
+    ekf: dict[str, np.ndarray],
+    plot_dir: Path,
+    dpi: int,
+) -> None:
+    """EKF state uncertainty (1-sigma) over time from the covariance diagonal."""
+    t = true_motion["t"]
+    cov = ekf["cov"]                      # variances, shape (5, n)
+    sigma = np.sqrt(np.maximum(cov, 0.0))
+
+    fig, axes = plt.subplots(3, 1, figsize=(11, 9), sharex=True)
+    axes[0].plot(t, sigma[0], label="σx")
+    axes[0].plot(t, sigma[1], label="σy")
+    axes[0].set_ylabel("Position σ [m]")
+    axes[1].plot(t, sigma[2], label="σvx")
+    axes[1].plot(t, sigma[3], label="σvy")
+    axes[1].set_ylabel("Velocity σ [m/s]")
+    axes[2].plot(t, np.rad2deg(sigma[4]), label="σψ", color="tab:green")
+    axes[2].set_ylabel("Yaw σ [deg]")
+    axes[2].set_xlabel("Time [s]")
+
+    for ax in axes:
+        ax.grid(True)
+        ax.legend(fontsize=9)
+    axes[0].set_title("EKF State Covariance (1σ) over Time")
+    fig.tight_layout()
+    fig.savefig(plot_dir / "ekf_covariance.png", dpi=dpi)
+    plt.close(fig)
+
+
+def plot_ekf_error_3sigma(
+    true_motion: dict[str, np.ndarray],
+    ekf: dict[str, np.ndarray],
+    plot_dir: Path,
+    dpi: int,
+) -> None:
+    """EKF estimation error with +/-3 sigma consistency bounds."""
+    t = true_motion["t"]
+    sigma = np.sqrt(np.maximum(ekf["cov"], 0.0))
+
+    err_x = ekf["x"] - true_motion["x"]
+    err_y = ekf["y"] - true_motion["y"]
+    dpsi = ekf["psi"] - true_motion["psi"]
+    err_psi = np.rad2deg(np.arctan2(np.sin(dpsi), np.cos(dpsi)))
+
+    panels = [
+        ("x error [m]", err_x, 3.0 * sigma[0]),
+        ("y error [m]", err_y, 3.0 * sigma[1]),
+        ("yaw error [deg]", err_psi, 3.0 * np.rad2deg(sigma[4])),
+    ]
+
+    fig, axes = plt.subplots(3, 1, figsize=(11, 9), sharex=True)
+    for ax, (label, err, three_sigma) in zip(axes, panels):
+        ax.fill_between(t, -three_sigma, three_sigma, color="tab:orange",
+                        alpha=0.25, label="±3σ")
+        ax.plot(t, err, color="tab:blue", linewidth=0.8, label="error")
+        ax.axhline(0.0, color="k", linewidth=0.6)
+        ax.set_ylabel(label)
+        ax.grid(True)
+        ax.legend(fontsize=9, loc="upper right")
+    axes[0].set_title("EKF Estimation Error with ±3σ Bounds")
+    axes[2].set_xlabel("Time [s]")
+    fig.tight_layout()
+    fig.savefig(plot_dir / "ekf_error_3sigma.png", dpi=dpi)
+    plt.close(fig)

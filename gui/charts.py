@@ -20,10 +20,13 @@ class StripChart:
         self.value_fmt = value_fmt
 
         all_y = np.concatenate([s["y"] for s in series])
-        self.ymin = float(np.min(all_y))
-        # Robust max so rare fault spikes do not flatten the nominal detail;
+        # Robust range so rare fault spikes do not flatten the nominal detail;
         # spikes are still drawn (clipped) and the exact value shows in readout.
-        self.ymax = float(np.percentile(all_y, yclip_pct))
+        # Both tails are clipped so signed-error strips stay centred on zero.
+        lo = float(np.percentile(all_y, 100.0 - yclip_pct))
+        hi = float(np.percentile(all_y, yclip_pct))
+        self.ymin = min(lo, 0.0) if all_y.min() < 0 else lo
+        self.ymax = max(hi, 0.0)
         if self.ymax <= self.ymin:
             self.ymax = self.ymin + 1.0
 
@@ -114,29 +117,26 @@ def build_strip_charts(data, cfg, colors, band_rect, selected_idx=0):
                            w, band_rect.height)
         method_range = range(len(data.methods)) if compare else [selected_idx]
 
-        if sig == "position_error":
+        if sig in ("position_error", "position"):
             series = [{"label": _abbr(data.methods[m]),
                        "color": method_color(m),
                        "y": data.pos_error[m]} for m in method_range]
             charts.append(StripChart(rect, "Position error [m]", data.t,
                                      series, colors, "{:.1f}"))
-        elif sig == "speed":
+        elif sig in ("speed", "speed_error"):
             conv = 3.6 if speed_unit == "kmh" else 1.0
             unit = "km/h" if speed_unit == "kmh" else "m/s"
-            series = [{"label": "GT", "color": dim, "y": data.true_v * conv}]
-            series += [{"label": _abbr(data.methods[m]),
-                        "color": method_color(m),
-                        "y": data.est_speed[m] * conv} for m in method_range]
-            charts.append(StripChart(rect, f"Speed [{unit}]", data.t,
-                                     series, colors, "{:.0f}"))
-        elif sig == "yaw":
-            series = [{"label": "GT", "color": dim,
-                       "y": np.rad2deg(data.true_psi)}]
-            series += [{"label": _abbr(data.methods[m]),
-                        "color": method_color(m),
-                        "y": np.rad2deg(data.est_psi[m])} for m in method_range]
-            charts.append(StripChart(rect, "Yaw [deg]", data.t,
-                                     series, colors, "{:.0f}"))
+            series = [{"label": _abbr(data.methods[m]),
+                       "color": method_color(m),
+                       "y": data.speed_error[m] * conv} for m in method_range]
+            charts.append(StripChart(rect, f"Speed error [{unit}]", data.t,
+                                     series, colors, "{:+.1f}"))
+        elif sig in ("yaw", "yaw_error"):
+            series = [{"label": _abbr(data.methods[m]),
+                       "color": method_color(m),
+                       "y": data.yaw_error_deg[m]} for m in method_range]
+            charts.append(StripChart(rect, "Yaw error [deg]", data.t,
+                                     series, colors, "{:+.1f}"))
     return charts
 
 

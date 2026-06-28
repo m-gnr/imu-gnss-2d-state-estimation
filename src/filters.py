@@ -227,12 +227,14 @@ def ekf_estimate(
     vx_out = np.zeros(n)
     vy_out = np.zeros(n)
     psi_out = np.zeros(n)
+    cov = np.zeros((5, n))  # diagonal of P (state variances) over time
 
     x_out[0] = state[0]
     y_out[0] = state[1]
     vx_out[0] = state[2]
     vy_out[0] = state[3]
     psi_out[0] = state[4]
+    cov[:, 0] = np.diag(P)
 
     for k in range(1, n):
         ax = calibrated_imu["ax"][k]
@@ -272,6 +274,7 @@ def ekf_estimate(
         vx_out[k] = state[2]
         vy_out[k] = state[3]
         psi_out[k] = state[4]
+        cov[:, k] = np.diag(P)
 
     return {
         "t": target_time,
@@ -280,6 +283,7 @@ def ekf_estimate(
         "vx": vx_out,
         "vy": vy_out,
         "psi": psi_out,
+        "cov": cov,
     }
 
 

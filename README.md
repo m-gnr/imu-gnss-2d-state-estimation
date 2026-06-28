@@ -70,11 +70,14 @@ Plots are saved under `outputs/plots`:
 - `y_position_error.png`
 - `position_error_magnitude.png`
 - `speed_comparison.png`
+- `velocity_components.png`
 - `yaw_comparison.png`
 - `gnss_fault_scenarios.png`
 - `imu_ax_calibration.png`
 - `imu_ay_calibration.png`
 - `gyro_calibration.png`
+- `ekf_covariance.png`
+- `ekf_error_3sigma.png`
 
 RMSE metrics are saved as CSV output under `outputs/data/rmse_table.csv`.
 
@@ -94,8 +97,8 @@ python run_gui.py     # opens the minimap window
 Features: vehicle-centred heading-up (rotating) minimap with the ground-truth
 route, the selected filter trail and GNSS points (invalid ones in red); a HUD
 (speed, time, method, position error); on-screen fault warnings; a media-player
-timeline you can scrub back and forth; and live time-series strips (position
-error, speed, yaw) for all methods, synced to the playhead. Everything —
+timeline you can scrub back and forth; and live error strips (position, speed
+and yaw error vs ground truth) for the active method, synced to the playhead. Everything —
 window size, colours, zoom, trail length, default method, playback speeds,
 which strips to show — is read from the `gui:` section of `config.yaml`.
 

@@ -180,7 +180,7 @@ gui:
   charts:
     height: 150                  # bottom strip band height (px)
     compare_all_methods: false   # false: only the active method (follows M key)
-    signals: [position_error, speed, yaw]
+    signals: [position_error, speed_error, yaw_error]
     speed_unit: kmh              # kmh | ms
   layers:
     ground_truth: true
