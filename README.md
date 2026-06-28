@@ -1,28 +1,26 @@
 # IMU-GNSS 2D State Estimation
 
-This project implements a modular and config-driven simulation framework for 2D vehicle state estimation using IMU and GNSS sensors.
+A modular, config-driven Python simulation for IMU-GNSS based 2D vehicle state estimation. The project generates a ground-truth vehicle trajectory, simulates noisy sensors and GNSS faults, compares multiple estimation filters, and exports plots and RMSE metrics.
 
-The system generates a ground-truth vehicle trajectory, simulates noisy IMU and GNSS measurements, applies sensor calibration, injects GNSS delay and fault scenarios, and compares different filtering approaches.
+## Features
 
-## Project Scope
-
-- 2D vehicle motion simulation
-- IMU sensor modeling
-- GNSS sensor modeling
-- Sensor bias, scale factor, and noise simulation
-- GNSS delay and fault injection
-- Sensor calibration
-- Raw GNSS, low-pass filter, complementary filter, and Kalman/EKF comparison
-- Error and trajectory visualization
-
-## Sensors
-
-- IMU: accelerometer and gyroscope
-- GNSS: position and velocity measurements
-
-## Configuration
-
-All simulation parameters, route segments, sensor noise values, fault scenarios, and filter parameters are defined in `config.yaml`.
+- Ground-truth 2D vehicle trajectory generation
+- IMU sensor model with accelerometer `ax`, `ay` and gyroscope yaw rate
+- GNSS sensor model with `x`, `y`, `vx`, `vy`
+- Sensor noise, bias, and scale factor modeling
+- IMU calibration
+- GNSS delay of 200 ms
+- GNSS fault scenarios:
+  - Dropout between 300-310 s
+  - 500 m position jump between 400-401 s
+  - Frozen GNSS data between 500-505 s
+- Filter comparison:
+  - Raw GNSS
+  - Low-pass Filter
+  - Complementary Filter
+- RMSE metric calculation
+- Plot generation under `outputs/plots`
+- RMSE CSV output under `outputs/data`
 
 ## Project Structure
 
@@ -44,8 +42,33 @@ imu-gnss-2d-state-estimation/
 │   ├── plots/
 │   └── data/
 └── report/
+```
 
-## Run
+## Installation
 
-pip install -r requirements.txt
+```bash
+python -m pip install -r requirements.txt
+```
+
+## Usage
+
+```bash
 python main.py
+```
+
+The simulation reads parameters from `config.yaml`, runs the trajectory, sensor, fault, calibration, filtering, and evaluation pipeline, then writes generated artifacts to the `outputs` directory.
+
+## Generated Outputs
+
+Plots are saved under `outputs/plots`:
+
+- `trajectory_comparison.png`
+- `position_error_magnitude.png`
+- `speed_comparison.png`
+- `yaw_comparison.png`
+- `gnss_fault_scenarios.png`
+- `imu_ax_calibration.png`
+- `imu_ay_calibration.png`
+- `gyro_calibration.png`
+
+RMSE metrics are saved as CSV output under `outputs/data`.
