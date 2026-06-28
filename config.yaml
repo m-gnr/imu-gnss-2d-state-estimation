@@ -159,6 +159,51 @@ output:
   plot_dir: outputs/plots
   data_dir: outputs/data
   save_csv: true
+  timeseries_file: outputs/data/timeseries.npz
+
+gui:
+  window:
+    width: 1180
+    height: 760
+    fps: 60
+    title: "IMU-GNSS Minimap"
+  data_source: outputs/data/timeseries.npz
+  map:
+    orientation: heading_up      # heading_up | north_up
+    zoom_m: 250                  # meters shown across half the minimap width
+    trail_seconds: 25            # length of the trail behind the vehicle
+    default_method: EKF          # filter trail shown on the map at start
+  playback:
+    speed_levels: [0.5, 1, 2, 4, 8, 16]
+    initial_speed: 1
+    start_paused: false
+  charts:
+    height: 150                  # bottom strip band height (px)
+    compare_all_methods: false   # false: only the active method (follows M key)
+    signals: [position_error, speed, yaw]
+    speed_unit: kmh              # kmh | ms
+  layers:
+    ground_truth: true
+    gnss_points: true
+    estimate: true
+  colors:
+    background: [18, 25, 37]
+    panel: [12, 18, 27]
+    grid: [91, 107, 130]
+    ground_truth: [93, 220, 138]
+    estimate: [242, 197, 55]
+    gnss_valid: [90, 160, 239]
+    gnss_invalid: [226, 85, 85]
+    vehicle: [255, 255, 255]
+    text: [233, 238, 246]
+    text_dim: [124, 138, 163]
+    warning: [226, 85, 85]
+    # per-method identity colors (map trail + strips recolor with the M key)
+    method_cycle:
+      - [240, 150, 70]    # Raw GNSS    - orange
+      - [170, 120, 235]   # Low-pass    - purple
+      - [80, 200, 210]    # Complementary - cyan
+      - [242, 197, 55]    # EKF         - yellow
 
 plotting:
   dpi: 150

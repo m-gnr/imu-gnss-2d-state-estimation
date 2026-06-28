@@ -22,6 +22,50 @@ def ensure_output_dirs(config: dict) -> None:
     Path(config["output"]["data_dir"]).mkdir(parents=True, exist_ok=True)
 
 
+def export_timeseries(
+    config: dict,
+    true_motion: dict,
+    gnss: dict,
+    estimates: dict,
+) -> Path:
+    """
+    Export the full time series the GUI needs into a single .npz file.
+
+    The GUI reads this file only; it never imports the simulation pipeline.
+    """
+    out_path = Path(
+        config["output"].get("timeseries_file", "outputs/data/timeseries.npz")
+    )
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    methods = list(estimates.keys())
+    est_x = np.vstack([estimates[m]["x"] for m in methods])
+    est_y = np.vstack([estimates[m]["y"] for m in methods])
+    est_psi = np.vstack([estimates[m]["psi"] for m in methods])
+    est_vx = np.vstack([estimates[m]["vx"] for m in methods])
+    est_vy = np.vstack([estimates[m]["vy"] for m in methods])
+
+    np.savez_compressed(
+        out_path,
+        t=true_motion["t"],
+        true_x=true_motion["x"],
+        true_y=true_motion["y"],
+        true_psi=true_motion["psi"],
+        true_v=true_motion["v"],
+        methods=np.array(methods),
+        est_x=est_x,
+        est_y=est_y,
+        est_psi=est_psi,
+        est_vx=est_vx,
+        est_vy=est_vy,
+        gnss_t=gnss["t"],
+        gnss_x=gnss["x"],
+        gnss_y=gnss["y"],
+        gnss_valid=gnss["valid"],
+    )
+    return out_path
+
+
 def main() -> None:
     config = load_config("config.yaml")
     ensure_output_dirs(config)
@@ -81,12 +125,16 @@ def main() -> None:
     rmse_csv_path = Path(config["output"]["data_dir"]) / "rmse_table.csv"
     rmse_table.to_csv(rmse_csv_path, index=False)
 
-    print("[7/7] Creating plots...")
+    print("[7/8] Creating plots...")
     create_all_plots(true_motion, imu, calibrated_imu, gnss, estimates, config)
+
+    print("[8/8] Exporting time series for the GUI...")
+    timeseries_path = export_timeseries(config, true_motion, gnss, estimates)
 
     print("\nDone.")
     print(f"Plots saved to: {config['output']['plot_dir']}")
     print(f"RMSE table saved to: {rmse_csv_path}")
+    print(f"Time series saved to: {timeseries_path}")
 
 
 if __name__ == "__main__":

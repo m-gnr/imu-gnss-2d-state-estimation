@@ -80,6 +80,29 @@ RMSE metrics are saved as CSV output under `outputs/data/rmse_table.csv`.
 
 A full Turkish project report (9 sections, with embedded plots and the RMSE table) is generated under `report/`.
 
+## GUI (minimap)
+
+A config-driven, GTA-style heading-up minimap that replays the run. It is fully
+decoupled from the pipeline: it only reads `outputs/data/timeseries.npz`, which
+`main.py` exports. Run the pipeline once, then launch the GUI:
+
+```bash
+python main.py        # produces outputs/data/timeseries.npz
+python run_gui.py     # opens the minimap window
+```
+
+Features: vehicle-centred heading-up (rotating) minimap with the ground-truth
+route, the selected filter trail and GNSS points (invalid ones in red); a HUD
+(speed, time, method, position error); on-screen fault warnings; a media-player
+timeline you can scrub back and forth; and live time-series strips (position
+error, speed, yaw) for all methods, synced to the playhead. Everything —
+window size, colours, zoom, trail length, default method, playback speeds,
+which strips to show — is read from the `gui:` section of `config.yaml`.
+
+Controls: `Space` play/pause · `← →` ±5 s · `↑ ↓` speed · `M` cycle method ·
+`O` heading-up/north-up · `G` toggle GNSS · `T`/`E` toggle ground-truth/estimate
+· drag the timeline to scrub.
+
 ## Results
 
 RMSE of each method against the ground truth (lower is better):
