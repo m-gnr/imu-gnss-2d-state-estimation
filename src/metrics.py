@@ -20,6 +20,8 @@ def compute_rmse_table(
         position_rmse = np.sqrt(x_rmse**2 + y_rmse**2)
         velocity_rmse = np.sqrt(vx_rmse**2 + vy_rmse**2)
 
+        yaw_rmse = _yaw_rmse_deg(true_motion["psi"], estimate["psi"])
+
         rows.append(
             {
                 "method": method_name,
@@ -29,6 +31,7 @@ def compute_rmse_table(
                 "vx_rmse_mps": vx_rmse,
                 "vy_rmse_mps": vy_rmse,
                 "velocity_rmse_mps": velocity_rmse,
+                "yaw_rmse_deg": yaw_rmse,
             }
         )
 
@@ -37,3 +40,15 @@ def compute_rmse_table(
 
 def _rmse(reference: np.ndarray, estimate: np.ndarray) -> float:
     return float(np.sqrt(np.mean((reference - estimate) ** 2)))
+
+
+def _yaw_rmse_deg(reference: np.ndarray, estimate: np.ndarray) -> float:
+    """
+    RMSE of the heading angle, computed on the wrapped angular difference
+    so that a 359 deg vs 1 deg comparison gives a 2 deg error (not 358).
+    """
+    diff = np.arctan2(
+        np.sin(estimate - reference),
+        np.cos(estimate - reference),
+    )
+    return float(np.sqrt(np.mean(diff**2)) * 180.0 / np.pi)

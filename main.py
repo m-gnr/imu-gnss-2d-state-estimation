@@ -7,7 +7,12 @@ from src.route_generator import generate_true_motion, print_motion_checkpoints
 from src.sensor_models import generate_imu, generate_gnss
 from src.faults import apply_gnss_delay, apply_gnss_faults
 from src.calibration import calibrate_imu, compute_calibration_error_stats
-from src.filters import raw_gnss_estimate, low_pass_filter_estimate, complementary_filter
+from src.filters import (
+    raw_gnss_estimate,
+    low_pass_filter_estimate,
+    complementary_filter,
+    ekf_estimate,
+)
 from src.metrics import compute_rmse_table
 from src.plotting import create_all_plots
 
@@ -49,11 +54,18 @@ def main() -> None:
         raw_estimate,
         config,
     )
+    ekf_est = ekf_estimate(
+        true_motion["t"],
+        calibrated_imu,
+        gnss,
+        config,
+    )
 
     estimates = {
         "Raw GNSS": raw_estimate,
         "Low-pass Filter": lpf_estimate,
         "Complementary Filter": comp_estimate,
+        "EKF": ekf_est,
     }
 
     print("[6/7] Computing metrics...")

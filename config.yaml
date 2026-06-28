@@ -123,12 +123,37 @@ faults:
     start: 500
     end: 505
 
+calibration:
+  # Vehicle is moving at constant speed on a straight segment in this window
+  # (true accel ~ 0, true yaw-rate ~ 0), so the IMU bias can be estimated
+  # directly from data without using any ground-truth values.
+  bias_window_start: 50.0
+  bias_window_end: 150.0
+  # Scale factors are assumed known from the sensor datasheet / factory
+  # calibration and are taken from the imu section above.
+
 filters:
   low_pass:
     alpha: 0.05
 
   complementary:
     alpha: 0.98
+
+  ekf:
+    # Process noise (how much we trust the IMU propagation)
+    process_noise_pos: 0.05
+    process_noise_vel: 0.05
+    process_noise_yaw: 0.01
+    # Initial covariance
+    init_pos_var: 25.0
+    init_vel_var: 4.0
+    init_yaw_var: 0.5
+    # Innovation (chi-square) gating: GNSS measurements whose normalised
+    # squared residual exceeds this threshold are rejected as outliers.
+    # ~chi2(4 dof) 99.9% = 18.5; here a tighter gate is used to reject the
+    # position-jump fault while accepting normal noisy measurements.
+    gate_threshold: 16.0
+    # Measurement noise is taken from the gnss section (position/velocity std)
 
 output:
   plot_dir: outputs/plots

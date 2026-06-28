@@ -8,7 +8,7 @@ A modular, config-driven Python simulation for IMU-GNSS based 2D vehicle state e
 - IMU sensor model with accelerometer `ax`, `ay` and gyroscope yaw rate
 - GNSS sensor model with `x`, `y`, `vx`, `vy`
 - Sensor noise, bias, and scale factor modeling
-- IMU calibration
+- IMU calibration with biases estimated **from the data** (constant-velocity window), not taken from ground truth
 - GNSS delay of 200 ms
 - GNSS fault scenarios:
   - Dropout between 300-310 s
@@ -17,8 +17,9 @@ A modular, config-driven Python simulation for IMU-GNSS based 2D vehicle state e
 - Filter comparison:
   - Raw GNSS
   - Low-pass Filter
-  - Complementary Filter
-- RMSE metric calculation
+  - Complementary Filter (IMU dead-reckoning during GNSS dropout)
+  - Extended Kalman Filter (EKF) with innovation gating for outlier/fault rejection
+- RMSE metric calculation for position, velocity, and yaw
 - Plot generation under `outputs/plots`
 - RMSE CSV output under `outputs/data`
 
@@ -42,6 +43,7 @@ imu-gnss-2d-state-estimation/
 │   ├── plots/
 │   └── data/
 └── report/
+    └── IMU_GNSS_2D_State_Estimation_Raporu.pdf
 ```
 
 ## Installation
@@ -62,7 +64,10 @@ The simulation reads parameters from `config.yaml`, runs the trajectory, sensor,
 
 Plots are saved under `outputs/plots`:
 
+- `true_trajectory.png`
 - `trajectory_comparison.png`
+- `x_position_error.png`
+- `y_position_error.png`
 - `position_error_magnitude.png`
 - `speed_comparison.png`
 - `yaw_comparison.png`
@@ -71,4 +76,23 @@ Plots are saved under `outputs/plots`:
 - `imu_ay_calibration.png`
 - `gyro_calibration.png`
 
-RMSE metrics are saved as CSV output under `outputs/data`.
+RMSE metrics are saved as CSV output under `outputs/data/rmse_table.csv`.
+
+A full Turkish project report (9 sections, with embedded plots and the RMSE table) is generated under `report/`.
+
+## Results
+
+RMSE of each method against the ground truth (lower is better):
+
+| Method | Position RMSE [m] | Velocity RMSE [m/s] | Yaw RMSE [°] |
+|---|---|---|---|
+| Raw GNSS | 25.18 | 0.697 | 1.289 |
+| Low-pass Filter | 26.01 | 0.683 | 1.039 |
+| Complementary Filter | 17.48 | 0.411 | 1.688 |
+| **EKF** | **5.01** | **0.325** | **1.688** |
+
+The EKF performs best across position and velocity; its innovation gating rejects the
+500 m position jump and the GNSS freeze faults, keeping the error low where the other
+methods spike. Yaw RMSE is identical for the EKF and complementary filter because
+neither receives a direct heading measurement from GNSS (both integrate the calibrated
+gyro).

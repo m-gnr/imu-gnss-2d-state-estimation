@@ -54,6 +54,9 @@ outputs/data/*.npz
 !outputs/data/rmse_table.csv
 !outputs/plots/*.png
 
+# Assignment brief (not part of the deliverable repo)
+Sensor_Fuzyon_bitirme_2026_son.pdf
+
 # Reports
 # Keep final reports if needed for submission
 # report/*.pdf
