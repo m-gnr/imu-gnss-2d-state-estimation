@@ -1,0 +1,140 @@
+simulation:
+  total_time: 1000.0
+  main_frequency: 50.0
+  dt: 0.02
+  random_seed: 42
+
+coordinate_system:
+  x_axis: "east"
+  y_axis: "north"
+  yaw_unit: "degree"
+  initial_yaw_reference: "90 deg means positive y direction"
+  positive_rotation: "counter_clockwise"
+  right_turn_sign: -1
+
+vehicle:
+  initial_x: 0.0
+  initial_y: 0.0
+  initial_speed_kmh: 0.0
+  initial_yaw_deg: 90.0
+  turn_direction_sign: -1
+
+route:
+  - start: 0
+    end: 10
+    speed_start_kmh: 0
+    speed_end_kmh: 100
+    yaw_change_deg: 0
+
+  - start: 10
+    end: 20
+    speed_start_kmh: 100
+    speed_end_kmh: 100
+    yaw_change_deg: 45
+
+  - start: 20
+    end: 200
+    speed_start_kmh: 100
+    speed_end_kmh: 100
+    yaw_change_deg: 0
+
+  - start: 200
+    end: 230
+    speed_start_kmh: 100
+    speed_end_kmh: 150
+    yaw_change_deg: 0
+
+  - start: 230
+    end: 260
+    speed_start_kmh: 150
+    speed_end_kmh: 100
+    yaw_change_deg: 180
+
+  - start: 260
+    end: 500
+    speed_start_kmh: 100
+    speed_end_kmh: 100
+    yaw_change_deg: 0
+
+  - start: 500
+    end: 510
+    speed_start_kmh: 100
+    speed_end_kmh: 50
+    yaw_change_deg: 0
+
+  - start: 510
+    end: 800
+    speed_start_kmh: 50
+    speed_end_kmh: 50
+    yaw_change_deg: 0
+
+  - start: 800
+    end: 830
+    speed_start_kmh: 50
+    speed_end_kmh: 100
+    yaw_change_deg: 90
+
+  - start: 830
+    end: 990
+    speed_start_kmh: 100
+    speed_end_kmh: 100
+    yaw_change_deg: 0
+
+  - start: 990
+    end: 1000
+    speed_start_kmh: 100
+    speed_end_kmh: 0
+    yaw_change_deg: 0
+
+imu:
+  frequency: 50.0
+  accel_noise_std: 0.10
+  gyro_noise_std: 0.005
+  accel_bias:
+    ax: 0.05
+    ay: -0.03
+  gyro_bias: 0.002
+  accel_scale:
+    ax: 1.02
+    ay: 0.98
+  gyro_scale: 1.01
+
+gnss:
+  frequency: 5.0
+  delay_sec: 0.2
+  position_noise_std: 2.0
+  velocity_noise_std: 0.5
+
+faults:
+  dropout:
+    enabled: true
+    start: 300
+    end: 310
+
+  position_jump:
+    enabled: true
+    start: 400
+    end: 401
+    error_x: 500
+    error_y: 500
+
+  freeze:
+    enabled: true
+    start: 500
+    end: 505
+
+filters:
+  low_pass:
+    alpha: 0.05
+
+  complementary:
+    alpha: 0.98
+
+output:
+  plot_dir: outputs/plots
+  data_dir: outputs/data
+  save_csv: true
+
+plotting:
+  dpi: 150
+  show_plots: false
